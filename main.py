@@ -62,6 +62,7 @@ def detected_gender(bboxes):
 # Open a video file or an image file or a camera stream
 cap = cv.VideoCapture(0)
 padding = 20
+couple = "Indistinguishable"
 while cv.waitKey(1) < 0:
     # Read frame
     t = time.time()
@@ -74,8 +75,9 @@ while cv.waitKey(1) < 0:
     if not bboxes:
         print("No face Detected, Checking next frame")
         continue
-    
+
     #ここでリア充かどうかを判別させる
+
     if len(bboxes)>1 and len(bboxes)<3:
         first_x1,first_x2,first_y1,first_y2 = bboxes[0]
         second_x1,second_x2,second_y1,second_y2 = bboxes[1]
@@ -83,10 +85,12 @@ while cv.waitKey(1) < 0:
         second_gender = detected_gender(bboxes[1])
         if (abs(first_x1-second_x2) <= 10) and ((first_gender=="Famale" and second_gender=="Male")or(first_gender=="Famale" and second_gender=="Male")):
             print('こいつらはリア充です')
+            couple = "Couple"
         else:
             print('リア充ではありません。')
-
+            couple = "NotCouple"
     for bbox in bboxes:
+        print(couple)
         face = frame[max(0,bbox[1]-padding):min(bbox[3]+padding,frame.shape[0]-1),max(0,bbox[0]-padding):min(bbox[2]+padding, frame.shape[1]-1)]
         blob = cv.dnn.blobFromImage(face, 1.0, (227, 227), MODEL_MEAN_VALUES, swapRB=False)
         genderNet.setInput(blob)
@@ -94,6 +98,6 @@ while cv.waitKey(1) < 0:
         gender = genderList[genderPreds[0].argmax()]
         # print("Gender Output : {}".format(genderPreds))
         print("Gender:{}".format(gender))
-        label = "{}".format(gender)
+        label = "{},{}".format(gender,couple)
         cv.putText(frameFace, label, (bbox[0], bbox[1]-10), cv.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2, cv.LINE_AA)
         cv.imshow("Age Gender Demo", frameFace)
