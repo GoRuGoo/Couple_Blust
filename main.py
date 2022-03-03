@@ -24,23 +24,14 @@ def getFaceBox(net, frame, conf_threshold=0.7):
             cv.rectangle(frameOpencvDnn, (x1, y1), (x2, y2), (0, 255, 0), int(round(frameHeight/150)), 8)
     return frameOpencvDnn, bboxes
 
-parser = argparse.ArgumentParser(description='Use this script to run age and gender recognition using OpenCV.')
-parser.add_argument('--input', help='Path to input image or video file. Skip this argument to capture frames from a camera.')
-parser.add_argument("--device", default="cpu", help="Device to inference on")
 
-args = parser.parse_args()
-
-
-args = parser.parse_args()
-
-faceProto = "opencv_face_detector.pbtxt"
-faceModel = "opencv_face_detector_uint8.pb"
-
-ageProto = "age_deploy.prototxt"
-ageModel = "age_net.caffemodel"
-
-genderProto = "gender_deploy.prototxt"
-genderModel = "gender_net.caffemodel"
+#学習済みモデルの読み込み
+faceProto = "./cascade/opencv_face_detector.pbtxt"
+faceModel = "./cascade/opencv_face_detector_uint8.pb"
+ageProto = "./cascade/age_deploy.prototxt"
+ageModel = "./cascade/age_net.caffemodel"
+genderProto = "./cascade/gender_deploy.prototxt"
+genderModel = "./cascade/gender_net.caffemodel"
 
 MODEL_MEAN_VALUES = (78.4263377603, 87.7689143744, 114.895847746)
 ageList = ['(0-2)', '(4-6)', '(8-12)', '(15-20)', '(25-32)', '(38-43)', '(48-53)', '(60-100)']
@@ -52,25 +43,14 @@ genderNet = cv.dnn.readNet(genderModel, genderProto)
 faceNet = cv.dnn.readNet(faceModel, faceProto)
 
 
-if args.device == "cpu":
-    ageNet.setPreferableBackend(cv.dnn.DNN_TARGET_CPU)
+ageNet.setPreferableBackend(cv.dnn.DNN_TARGET_CPU)
 
-    genderNet.setPreferableBackend(cv.dnn.DNN_TARGET_CPU)
-    
-    faceNet.setPreferableBackend(cv.dnn.DNN_TARGET_CPU)
+genderNet.setPreferableBackend(cv.dnn.DNN_TARGET_CPU)
 
-    print("Using CPU device")
-elif args.device == "gpu":
-    ageNet.setPreferableBackend(cv.dnn.DNN_BACKEND_CUDA)
-    ageNet.setPreferableTarget(cv.dnn.DNN_TARGET_CUDA)
+faceNet.setPreferableBackend(cv.dnn.DNN_TARGET_CPU)
 
-    genderNet.setPreferableBackend(cv.dnn.DNN_BACKEND_CUDA)
-    genderNet.setPreferableTarget(cv.dnn.DNN_TARGET_CUDA)
 
-    genderNet.setPreferableBackend(cv.dnn.DNN_BACKEND_CUDA)
-    genderNet.setPreferableTarget(cv.dnn.DNN_TARGET_CUDA)
-    print("Using GPU device")
-
+#入力された配列から性別を特定
 def detected_gender(bboxes):
         face = frame[max(0,bbox[1]-padding):min(bbox[3]+padding,frame.shape[0]-1),max(0,bbox[0]-padding):min(bbox[2]+padding, frame.shape[1]-1)]
         blob = cv.dnn.blobFromImage(face, 1.0, (227, 227), MODEL_MEAN_VALUES, swapRB=False)
@@ -80,7 +60,7 @@ def detected_gender(bboxes):
         
         return gender
 # Open a video file or an image file or a camera stream
-cap = cv.VideoCapture(args.input if args.input else 0)
+cap = cv.VideoCapture(0)
 padding = 20
 while cv.waitKey(1) < 0:
     # Read frame
@@ -94,8 +74,8 @@ while cv.waitKey(1) < 0:
     if not bboxes:
         print("No face Detected, Checking next frame")
         continue
-    #この下でリア充かどうかを判断する
-
+    
+    #ここでリア充かどうかを判別させる
     if len(bboxes)>1 and len(bboxes)<3:
         first_x1,first_x2,first_y1,first_y2 = bboxes[0]
         second_x1,second_x2,second_y1,second_y2 = bboxes[1]
@@ -107,18 +87,13 @@ while cv.waitKey(1) < 0:
             print('リア充ではありません。')
 
     for bbox in bboxes:
-        # print(bbox)
         face = frame[max(0,bbox[1]-padding):min(bbox[3]+padding,frame.shape[0]-1),max(0,bbox[0]-padding):min(bbox[2]+padding, frame.shape[1]-1)]
-
         blob = cv.dnn.blobFromImage(face, 1.0, (227, 227), MODEL_MEAN_VALUES, swapRB=False)
         genderNet.setInput(blob)
         genderPreds = genderNet.forward()
         gender = genderList[genderPreds[0].argmax()]
         # print("Gender Output : {}".format(genderPreds))
         print("Gender:{}".format(gender))
-
-
-
         label = "{}".format(gender)
         cv.putText(frameFace, label, (bbox[0], bbox[1]-10), cv.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2, cv.LINE_AA)
         cv.imshow("Age Gender Demo", frameFace)
