@@ -89,6 +89,9 @@ while cv.waitKey(1) < 0:
         else:
             print('リア充ではありません。')
             couple = "NotCouple"
+    if len(bboxes)==1:
+        couple = "Indistinguishable"
+
     for bbox in bboxes:
         print(couple)
         face = frame[max(0,bbox[1]-padding):min(bbox[3]+padding,frame.shape[0]-1),max(0,bbox[0]-padding):min(bbox[2]+padding, frame.shape[1]-1)]
