@@ -1,8 +1,12 @@
 # Import required modules
+from email.errors import MalformedHeaderDefect
 import cv2 as cv
 import math
 import time
 import argparse
+import numpy as np
+import plot_graph
+
 
 def getFaceBox(net, frame, conf_threshold=0.7):
     frameOpencvDnn = frame.copy()
@@ -34,7 +38,6 @@ genderProto = "./cascade/gender_deploy.prototxt"
 genderModel = "./cascade/gender_net.caffemodel"
 
 MODEL_MEAN_VALUES = (78.4263377603, 87.7689143744, 114.895847746)
-ageList = ['(0-2)', '(4-6)', '(8-12)', '(15-20)', '(25-32)', '(38-43)', '(48-53)', '(60-100)']
 genderList = ['Male', 'Female']
 
 # Load network
@@ -42,11 +45,9 @@ ageNet = cv.dnn.readNet(ageModel, ageProto)
 genderNet = cv.dnn.readNet(genderModel, genderProto)
 faceNet = cv.dnn.readNet(faceModel, faceProto)
 
-
+#CPU処理の設定
 ageNet.setPreferableBackend(cv.dnn.DNN_TARGET_CPU)
-
 genderNet.setPreferableBackend(cv.dnn.DNN_TARGET_CPU)
-
 faceNet.setPreferableBackend(cv.dnn.DNN_TARGET_CPU)
 
 
@@ -59,6 +60,10 @@ def detected_gender(bboxes):
         gender = genderList[genderPreds[0].argmax()]
         
         return gender
+
+
+
+
 # Open a video file or an image file or a camera stream
 cap = cv.VideoCapture(0)
 padding = 20
@@ -77,23 +82,26 @@ while cv.waitKey(1) < 0:
         continue
 
     #ここでリア充かどうかを判別させる
-
     if len(bboxes)>1 and len(bboxes)<3:
-        first_x1,first_x2,first_y1,first_y2 = bboxes[0]
-        second_x1,second_x2,second_y1,second_y2 = bboxes[1]
+        first_x1,first_y1,first_x2,first_y2 = bboxes[0]
+        second_x1,second_y1,second_x2,second_y2 = bboxes[1]
         first_gender = detected_gender(bboxes[0])
         second_gender = detected_gender(bboxes[1])
-        if (abs(first_x1-second_x2) <= 10) and ((first_gender=="Famale" and second_gender=="Male")or(first_gender=="Famale" and second_gender=="Male")):
-            print('こいつらはリア充です')
+        print("first,{}".format(bboxes[0]))
+        print("second,{}".format(bboxes[1]))
+        
+        if(min(abs(first_x2-second_x1),abs(second_x2-first_x1))<100):#and(((first_gender=="Male")and(second_gender=="Famale"))or((first_gender=="Famale")and(second_gender=="Male"))):
+            print('こいつらはリア充です。')
             couple = "Couple"
-        else:
-            print('リア充ではありません。')
+        elif(first_gender == second_gender):
+            print('この方たちはリア充ではありません。')
             couple = "NotCouple"
+
     if len(bboxes)==1:
         couple = "Indistinguishable"
 
     for bbox in bboxes:
-        print(couple)
+        
         face = frame[max(0,bbox[1]-padding):min(bbox[3]+padding,frame.shape[0]-1),max(0,bbox[0]-padding):min(bbox[2]+padding, frame.shape[1]-1)]
         blob = cv.dnn.blobFromImage(face, 1.0, (227, 227), MODEL_MEAN_VALUES, swapRB=False)
         genderNet.setInput(blob)
