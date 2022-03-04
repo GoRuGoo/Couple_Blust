@@ -4,6 +4,9 @@ import cv2 as cv
 import math
 import time
 import argparse
+import numpy as np
+import plot_graph
+
 
 def getFaceBox(net, frame, conf_threshold=0.7):
     frameOpencvDnn = frame.copy()
@@ -57,6 +60,10 @@ def detected_gender(bboxes):
         gender = genderList[genderPreds[0].argmax()]
         
         return gender
+
+
+
+
 # Open a video file or an image file or a camera stream
 cap = cv.VideoCapture(0)
 padding = 20
@@ -76,21 +83,14 @@ while cv.waitKey(1) < 0:
 
     #ここでリア充かどうかを判別させる
     if len(bboxes)>1 and len(bboxes)<3:
-        first_x1,first_x2,first_y1,first_y2 = bboxes[0]
-        second_x1,second_x2,second_y1,second_y2 = bboxes[1]
+        first_x1,first_y1,first_x2,first_y2 = bboxes[0]
+        second_x1,second_y1,second_x2,second_y2 = bboxes[1]
         first_gender = detected_gender(bboxes[0])
         second_gender = detected_gender(bboxes[1])
-        print("first{}".format(bboxes[0]))
-        print("second{}".format(bboxes[1]))
-        """
-        if (abs(first_x1-second_x2) <= 10) and ((first_gender=="Famale" and second_gender=="Male")or(first_gender=="Famale" and second_gender=="Male")):
-            print('こいつらはリア充です')
-            couple = "Couple"
-        else:
-            print('リア充ではありません。')
-            couple = "NotCouple"
-        """
-        if(min(first_x2-second_x1,second_x2-first_x1)<200):#and(((first_gender=="Male")and(second_gender=="Famale"))or((first_gender=="Famale")and(second_gender=="Male"))):
+        print("first,{}".format(bboxes[0]))
+        print("second,{}".format(bboxes[1]))
+        
+        if(min(abs(first_x2-second_x1),abs(second_x2-first_x1))<100):#and(((first_gender=="Male")and(second_gender=="Famale"))or((first_gender=="Famale")and(second_gender=="Male"))):
             print('こいつらはリア充です。')
             couple = "Couple"
         elif(first_gender == second_gender):
