@@ -9,3 +9,9 @@
 また、このシステムでのリア充はは生物学上で分類された男女の対になった組み合わせとしています。  
 差別的な意味は含んでいないことのご理解をよろしくおねがいします。  
 MITライセンスの下<https://github.com/spmallick/learnopencv>のソースコードを改造しています。
+## 使い方
+1.```git clone https://github.com/GoRuGoo/Couple_Blust.git```  
+
+2.```cd Couple_Blust```  
+
+3.```python main.py```
